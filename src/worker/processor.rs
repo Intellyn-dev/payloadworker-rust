@@ -13,13 +13,21 @@ pub async fn process_job(pool: PgPool, job_id: Uuid) -> Result<(), AppError> {
                 "SELECT id, payload, status, attempts, created_at, updated_at FROM jobs WHERE id = $1",
                 job_id
             )
-            .fetch_one(&pool)
+            .fetch_optional(&pool)
         )
     })
     .await
     .map_err(|e| AppError::Internal(format!("Task join error: {e}")))?
     .map_err(AppError::Database)?;
 
-    info!("Processing job {} with payload: {:?}", job.id, job.payload);
-    Ok(())
+    match job {
+        Some(job) => {
+            info!("Processing job {} with payload: {:?}", job.id, job.payload);
+            Ok(())
+        }
+        None => {
+            info!("Job {} not found after being claimed, likely deleted externally", job_id);
+            Err(AppError::NotFound(format!("Job {job_id} not found for processing after being claimed.")))
+        }
+    }
 }
