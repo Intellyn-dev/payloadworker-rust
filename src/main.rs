@@ -2,22 +2,9 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use sqlx::PgPool;
-use std::sync::Arc;
+use payloadworker::{db, handlers, worker, AppState};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-mod crypto;
-mod db;
-mod errors;
-mod handlers;
-mod worker;
-
-#[derive(Clone)]
-pub struct AppState {
-    pub pool: PgPool,
-    pub webhook_secret: String,
-}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

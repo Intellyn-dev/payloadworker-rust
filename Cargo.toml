@@ -3,6 +3,10 @@ name = "payloadworker"
 version = "1.0.0"
 edition = "2021"
 
+[lib]
+name = "payloadworker"
+path = "src/lib.rs"
+
 [[bin]]
 name = "payloadworker"
 path = "src/main.rs"
