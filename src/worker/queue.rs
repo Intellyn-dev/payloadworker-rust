@@ -16,7 +16,7 @@ pub async fn run_queue_loop(pool: PgPool) {
         match claim_pending_job(&pool).await {
             Ok(Some(job)) => {
                 info!("Processing job {}", job.id);
-                match process_job(pool.clone(), job.id).await {
+                match process_job(job.clone()).await {
                     Ok(_) => {
                         if let Err(e) = update_job_status(&pool, job.id, "completed").await {
                             error!("Failed to mark job completed: {e}");
