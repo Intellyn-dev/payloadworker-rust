@@ -16,17 +16,19 @@ pub async fn run_queue_loop(pool: PgPool) {
         match claim_pending_job(&pool).await {
             Ok(Some(job)) => {
                 info!("Processing job {}", job.id);
-                match process_job(pool.clone(), job.id).await {
+                let job_id = job.id;
+                let attempts = job.attempts;
+                match process_job(job).await {
                     Ok(_) => {
-                        if let Err(e) = update_job_status(&pool, job.id, "completed").await {
+                        if let Err(e) = update_job_status(&pool, job_id, "completed").await {
                             error!("Failed to mark job completed: {e}");
                         }
                     }
                     Err(e) => {
-                        error!("Job {} failed: {e}", job.id);
-                        let delay = backoff_ms(job.attempts as u32);
+                        error!("Job {} failed: {e}", job_id);
+                        let delay = backoff_ms(attempts as u32);
                         sleep(Duration::from_millis(delay)).await;
-                        let _ = update_job_status(&pool, job.id, "failed").await;
+                        let _ = update_job_status(&pool, job_id, "failed").await;
                     }
                 }
             }
