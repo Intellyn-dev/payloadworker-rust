@@ -6,19 +6,14 @@ use crate::db::jobs::get_job;
 use crate::errors::AppError;
 
 pub async fn process_job(pool: PgPool, job_id: Uuid) -> Result<(), AppError> {
-    let job = tokio::task::spawn_blocking(move || {
-        tokio::runtime::Handle::current().block_on(
-            sqlx::query_as!(
+    let job = sqlx::query_as!(
                 crate::db::jobs::Job,
                 "SELECT id, payload, status, attempts, created_at, updated_at FROM jobs WHERE id = $1",
                 job_id
             )
             .fetch_one(&pool)
-        )
-    })
-    .await
-    .map_err(|e| AppError::Internal(format!("Task join error: {e}")))?
-    .map_err(AppError::Database)?;
+            .await
+            .map_err(AppError::Database)?;
 
     info!("Processing job {} with payload: {:?}", job.id, job.payload);
     Ok(())
